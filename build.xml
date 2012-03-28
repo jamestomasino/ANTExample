@@ -1,0 +1,79 @@
+<project name="antExample" default="compile" basedir="." >
+	<description>
+		Ant Example
+	</description>
+
+	<property file="ant/local.properties" description="local build configuration."/>
+	<property file="ant/build.properties" description="build configuration."/>
+
+	<taskdef resource="flexTasks.tasks" classpath="${FLEX_HOME}/ant/lib/flexTasks.jar" />
+
+	<!-- Create the build folder for project -->
+	<target name="make_build">
+		<mkdir dir="${build.dir}"/>
+	</target>
+
+	<!-- Copy template folder to build -->
+	<target name="make_template" depends="make_build" unless="nochanges_template">
+		<copy todir="${build.dir}">
+		  <fileset dir="${template.dir}">
+		  	<include name="**/css/**"/>
+		  	<include name="**/images/**"/>
+		  	<include name="**/js/**"/>
+		  	<include name="*.html"/>
+		  </fileset>
+		</copy>
+	</target>
+
+	<!-- Compile SWF to build -->
+	<target name="make_swf" depends="make_template" unless="nochanges_flash">
+		<mxmlc 
+			file="${src.dir}/org/tomasino/projects/antexample/Example.as" 
+			output="${build.dir}/example.swf"
+			actionscript-file-encoding="UTF-8"
+			keep-generated-actionscript="false"
+			optimize="true"
+			>
+			
+			<!-- Get default compiler options. Hand modified to remove extraneous Flex trash -->
+			<load-config filename="ant/config.xml"/>
+			
+			<!-- List of path elements that form the roots of ActionScript class hierarchies. -->
+			<source-path path-element="${FLEX_HOME}/frameworks" />
+			<source-path path-element="${src.dir}" />
+			<source-path path-element="${tomasinolibs.dir}" />
+			
+			<!-- List of SWC files or directories that contain SWC files. -->
+			<compiler.library-path dir="${libs.dir}" append="true">
+				<!-- <include name="example.swc" /> -->
+			</compiler.library-path>
+
+			<!-- Flags -->
+			<compiler.debug>false</compiler.debug>
+		</mxmlc>
+	</target>
+
+	<!-- Test for dependencies and changes -->
+	<target name="init">
+		<uptodate property="nochanges_flash" targetfile="${build.dir}/example.swf">
+			<srcfiles dir="${src.dir}" includes="**/**"/>
+		</uptodate>
+		
+		<uptodate property="nochanges_template" targetfile="${build.dir}/index.html">
+			<srcfiles dir="${template.dir}" includes="**/**"/>
+		</uptodate>
+
+		<condition property="build.exists">
+			<available file="${build.dir}" type="dir"/>
+		</condition>
+	</target>
+
+	<!-- Cleanup -->
+	<target name="clean" depends="init" if="build.exists">
+		<delete dir="${build.dir}"/>
+	</target>
+
+	<!-- Compile SWF -->
+	<target name="compile" depends="init, make_swf" />
+
+</project>
